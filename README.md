@@ -13,6 +13,26 @@
 
 GGResource 是一个面向游戏客户端的**资源管理系统**，基于 Loxodon Framework 的 AssetBundle 体系构建。它提供按分组 / 标签分类、优先级排序、异步加载队列、缓存与状态回调，并支持编辑器模拟模式，让资源加载更方便、可控、可调试。
 
+### 架构示意
+
+```mermaid
+flowchart LR
+    subgraph 编辑器
+        Sim[模拟模式 Simulation<br/>AssetDatabase 直接加载]
+    end
+    subgraph 运行时
+        UR[URL 远程<br/>Persistent 更新包<br/>StreamingAssets 内置]
+        RS[ResourceSystem<br/>Tag/Group 分类 + 优先级 + 缓存 + 回调]
+    end
+    RS --> OBJ[资源实例<br/>ResourceObject]
+    OBJ --> Biz[游戏业务]
+
+    Sim -.开发调试.-> RS
+    RS -.按序选择来源.-> UR
+```
+
+> **双路径**：编辑器用模拟模式（不打 Bundle 即可跑通），运行时走 AssetBundle；`GBundleBuilder` 按 `缓存 → Persistent → StreamingAssets → URL` 顺序选择来源，支持加密 Bundle。
+
 ## 功能与特性
 
 **多来源加载**
@@ -88,7 +108,8 @@ GGResource 是一个面向游戏客户端的**资源管理系统**，基于 Loxo
 
 ## 文档
 
-* 使用文档(TODO)
+* [如何快速接入?](/documents/quickstart.md)
+* [技术手册](/documents/manual.md)
 
 ## 进群沟通
 
