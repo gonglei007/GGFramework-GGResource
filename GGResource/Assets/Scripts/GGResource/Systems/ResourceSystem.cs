@@ -68,7 +68,7 @@ public class ResourceSystem : Singleton<ResourceSystem>
     private HashSet<ResourceItem> p0ResourceSet = new HashSet<ResourceItem>();
 
     //private ConcurrentQueue<ResourceItem> loadingQueue = null;// new ConcurrentQueue<ResourceItem>();       // 资源加载队列。
-    private List<ResourceItem> loadingList = null;
+    private List<ResourceItem> loadingList = new List<ResourceItem>();
 
     private Dictionary<string, Dictionary<string, ResourceObject>> resourceBuffer = new Dictionary<string, Dictionary<string, ResourceObject>>();
     private Dictionary<string, List<string>> assetsInBundle = new Dictionary<string, List<string>>();
@@ -212,7 +212,7 @@ public class ResourceSystem : Singleton<ResourceSystem>
         List<string> assetList = assetsInBundle[bundleName];
         foreach (string asset in assetList) {
             ResourceObject resourceObject = GetObject(tag, asset);
-            if (resourceObject != null && resourceObject.assetObject != null && resourceObject.assetObject.GetType() is T) {
+            if (resourceObject != null && resourceObject.assetObject is T) {
                 assetListByType.Add(resourceObject);
             }
         }
@@ -534,6 +534,9 @@ public class ResourceSystem : Singleton<ResourceSystem>
 
     public void DestroyObject(Tag tag, string name) {
         string key = GetKeyByGroupTag(this.Group, tag);
+        if (!resourceBuffer.ContainsKey(key)) {
+            return;
+        }
         Dictionary<string, ResourceObject> resourceTable = resourceBuffer[key];
         if (resourceTable.ContainsKey(name))
         {
