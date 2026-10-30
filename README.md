@@ -89,13 +89,14 @@ flowchart LR
 
 ## 依赖
 
+* **GGFramework.Core** — `Singleton` / `CoroutineUtil` 等基础类的单一源，经 UPM git URL 引用（`#v0.1.1`）；工程内原本地 `Singleton.cs` 副本已删除
 * **Loxodon Framework** — 底层 AssetBundle 加载 / 协程 / 加密（位于 `Assets/LocalPackages`）
 * **CsAsync** — 异步任务流库（`Waterfall` / `Whilst` / `Each`），用于串联加载队列（位于 `Assets/LocalPackages`）
 * **SimpleJson** — 轻量 JSON 序列化库
 
 ## 设计模式
 
-* **单例** — `ResourceSystem : Singleton<ResourceSystem>`
+* **单例** — `ResourceSystem : Singleton<ResourceSystem>`（`Singleton<T>` 由 `GGFramework.Core` 提供）
 * **工厂方法** — `GBundleBuilder` 按条件返回对应加载器
 * **策略 / 接口分离** — `IPathInfoParser`（运行 / 模拟两套实现）、`ILoaderBuilder`、`IResources`
 * **观察者 / 回调** — 加载回调事件、`ListenObject` 资源就绪监听

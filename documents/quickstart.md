@@ -3,9 +3,9 @@
 > GGResource 是 GGFramework 的 Unity 资源加载系统，负责对 LoxodonFramework 的 Bundle 加载能力进行封装，
 > 提供 **编辑器 Simulation 模拟加载** 与 **运行时 AssetBundle 加载** 双路径支持、资源缓存、加载队列、优先级加载与监听回调等能力。
 
-- 适用 Unity 版本：**Unity 2021.3.4f1c1**
-- 核心依赖：**LoxodonFramework**（Bundles / Contexts / Asynchronous / Security.Cryptography）、**CsAsync**（Whilst / Waterfall）、**SimpleJson**
-- 核心单例：`ResourceSystem`（位于 `GGResource/Assets/Scripts/GGResource/Systems/ResourceSystem.cs`，继承 `Singleton<ResourceSystem>`）
+- 适用 Unity 版本：**Unity 6000.3.13f1**
+- 核心依赖：**GGFramework.Core**（`Singleton` / `CoroutineUtil` 单一源，经 UPM 引用 `#v0.1.1`）、**LoxodonFramework**（Bundles / Contexts / Asynchronous / Security.Cryptography）、**CsAsync**（Whilst / Waterfall）、**SimpleJson**
+- 核心单例：`ResourceSystem`（位于 `GGResource/Assets/Scripts/GGResource/Systems/ResourceSystem.cs`，继承 `Singleton<ResourceSystem>`；`Singleton<T>` 由 GGFramework.Core 提供，工程内已无本地副本）
 
 ---
 
@@ -18,15 +18,14 @@
 ```
 Assets/
 ├── Scripts/
-│   ├── GGResource/                       # GGResource 框架源码（核心）
-│   │   ├── Systems/ResourceSystem.cs     # 资源系统单例
-│   │   └── Resource/
-│   │       ├── GBundleBuilder.cs         # 自定义加载器工厂
-│   │       ├── GMappingPathInfoParser.cs # 路径<->Bundle 映射（运行时）
-│   │       ├── GSimulationAutoMappingPathInfoParser.cs # 编辑器模拟映射
-│   │       ├── ResourceItem.cs           # 加载任务描述
-│   │       └── ResourceObject.cs         # 结果缓存对象
-│   └── Dependency/Utils/Singleton.cs     # 泛型 MonoBehaviour 单例基类
+│   └── GGResource/                       # GGResource 框架源码（核心）
+│       ├── Systems/ResourceSystem.cs     # 资源系统单例（继承 Core 的 Singleton<T>）
+│       └── Resource/
+│           ├── GBundleBuilder.cs         # 自定义加载器工厂
+│           ├── GMappingPathInfoParser.cs # 路径<->Bundle 映射（运行时）
+│           ├── GSimulationAutoMappingPathInfoParser.cs # 编辑器模拟映射
+│           ├── ResourceItem.cs           # 加载任务描述
+│           └── ResourceObject.cs         # 结果缓存对象
 ├── LocalPackages/LoxodonFramework/       # LoxodonFramework 依赖（Bundles 等）
 └── ...
 ```
@@ -35,7 +34,17 @@ Assets/
 > `Loxodon.Framework.Bundles`、`Loxodon.Framework.Contexts`、`Loxodon.Framework.Security.Cryptography`、
 > `Loxodon.Framework.Asynchronous`、`CsAsync`、`SimpleJson` 命名空间。
 
-### 2. 添加一条 `using`
+### 2. 添加 GGFramework.Core 依赖（必需）
+
+`ResourceSystem` 继承的 `Singleton<T>` 已收敛到 **GGFramework.Core** 单一源，工程内不再有本地 `Singleton.cs` 副本。在目标工程的 `Packages/manifest.json` 中加入：
+
+```json
+"com.gonglei.ggframework.core": "https://github.com/gonglei007/GGFramework-Core.git#v0.1.1"
+```
+
+> Core 的 Runtime 程序集 `autoReferenced: true`，`Assembly-CSharp` 中的 `ResourceSystem` 可直接解析到 `Singleton<T>`，无需额外改 asmdef。
+
+### 3. 添加一条 `using`
 
 在脚本顶部引用即可（ResourceSystem 定义在全局命名空间中）：
 
