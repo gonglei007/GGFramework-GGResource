@@ -160,5 +160,89 @@ namespace GGFramework.GGResource.Tests
             Assert.AreEqual(1, gameObjects.Length, "应只返回 GameObject 类型的资源");
             Assert.IsInstanceOf<GameObject>(gameObjects[0].assetObject);
         }
+
+        [Test]
+        public void DestroyObject_Unretained_RemovesAndDestroys()
+        {
+            Texture2D tex = NewTexture();
+            ResourceObject ro = new ResourceObject("b", "hero", tex);
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, ro);
+
+            sys.DestroyObject(ResourceSystem.Tag.UI, "hero");
+
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "hero"), "未 Retain 时单次释放即应移除");
+            Assert.IsTrue(ro.assetObject == null, "共享 asset 应被销毁");
+        }
+
+        [Test]
+        public void DestroyObject_Retained_NotDestroyedUntilAllReleased()
+        {
+            Texture2D tex = NewTexture();
+            ResourceObject ro = new ResourceObject("b", "hero", tex);
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, ro);
+
+            sys.Retain(ResourceSystem.Tag.UI, "hero");
+            sys.Retain(ResourceSystem.Tag.UI, "hero");
+            Assert.AreEqual(2, ro.refCount);
+
+            sys.DestroyObject(ResourceSystem.Tag.UI, "hero");
+            Assert.IsNotNull(sys.GetObject(ResourceSystem.Tag.UI, "hero"), "仍有引用时不应移除");
+            Assert.IsFalse(ro.assetObject == null, "仍有引用时 asset 不应被销毁");
+            Assert.AreEqual(1, ro.refCount);
+
+            sys.DestroyObject(ResourceSystem.Tag.UI, "hero");
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "hero"), "引用归零后应移除");
+            Assert.IsTrue(ro.assetObject == null, "引用归零后 asset 应被销毁");
+        }
+
+        [Test]
+        public void Retain_Unknown_NoThrow()
+        {
+            Assert.DoesNotThrow(() => sys.Retain(ResourceSystem.Tag.UI, "missing"));
+        }
+
+        [Test]
+        public void ClearObjects_DestroysGroupAssetsAndEmptiesTable()
+        {
+            Texture2D tex1 = NewTexture();
+            Texture2D tex2 = NewTexture();
+            ResourceObject ro1 = new ResourceObject("b", "a", tex1);
+            ResourceObject ro2 = new ResourceObject("b", "c", tex2);
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, ro1);
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, ro2);
+
+            sys.ClearObjects(sys.Group);
+
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "a"));
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "c"));
+            Assert.IsTrue(ro1.assetObject == null, "组内 asset 应被销毁");
+            Assert.IsTrue(ro2.assetObject == null, "组内 asset 应被销毁");
+        }
+
+        [Test]
+        public void ClearObjects_MultiKeySnapshot_NoIterationException()
+        {
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, new ResourceObject("b", "ui1", NewTexture()));
+            sys.SetObject(sys.Group, ResourceSystem.Tag.Model, new ResourceObject("b", "m1", NewTexture()));
+            sys.SetObject(sys.Group, ResourceSystem.Tag.VFX, new ResourceObject("b", "v1", NewTexture()));
+
+            // 多个 group-tag 键存在时，ClearObjects 不应抛 InvalidOperationException（快照修复）。
+            Assert.DoesNotThrow(() => sys.ClearObjects(sys.Group));
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "ui1"));
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.Model, "m1"));
+        }
+
+        [Test]
+        public void ClearResources_ClearsCurrentGroup()
+        {
+            Texture2D tex = NewTexture();
+            ResourceObject ro = new ResourceObject("b", "res", tex);
+            sys.SetObject(sys.Group, ResourceSystem.Tag.UI, ro);
+
+            sys.ClearResources();
+
+            Assert.IsNull(sys.GetObject(ResourceSystem.Tag.UI, "res"));
+            Assert.IsTrue(ro.assetObject == null);
+        }
     }
 }
