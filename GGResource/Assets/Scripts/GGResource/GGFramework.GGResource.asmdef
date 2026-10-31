@@ -1,0 +1,17 @@
+{
+    "name": "GGFramework.GGResource",
+    "rootNamespace": "",
+    "references": [
+        "LocalPackages",
+        "GGFramework.Core.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

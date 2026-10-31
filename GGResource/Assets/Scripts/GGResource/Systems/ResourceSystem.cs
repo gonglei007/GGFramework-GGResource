@@ -342,7 +342,9 @@ public class ResourceSystem : Singleton<ResourceSystem>
     public void DoLoading()
     {
         this.loadNumber = 0;
-        this.loadTotal = p0ResourceSet.Count;
+        // P1 修复：loadTotal 此前取 p0ResourceSet.Count（仅 0 优先级资源），而 loadNumber 对每个完成资源自增，
+        // 存在非 p0 资源时进度会出现 loadNumber>loadTotal 或提前到顶。改为取本轮实际入队数量，与 loadNumber 语义对齐。
+        this.loadTotal = loadingList.Count;
         //TODO: 一次处理的数量要有限制。
         //int resourceCount = loadingQueue.Count;
         int resourceCount = loadingList.Count;
@@ -732,24 +734,89 @@ public class ResourceSystem : Singleton<ResourceSystem>
             IProgressResult<float, IBundle> bundleResult = resources.LoadBundle(bundleName);
 
             bundleResult.Callbackable().OnCallback((br) => {
-                FixShaders(br);
-                if (assetName != null)
+                try
                 {
-                    IProgressResult<float, UnityEngine.Object> assetResult = br.Result.LoadAssetAsync<UnityEngine.Object>(assetName);
-                    assetResult.Callbackable().OnCallback((ar) => {
-                        onLoaded(ar.Result);
-                        onFinish();
-                    });
+                    // P1 修复：运行时分支此前缺少与编辑器分支对等的异常/空结果处理，且 onFinish 未判空——
+                    // LoadFloatAssetAsync 传入 onFinish=null 时真机必抛 NullReferenceException。
+                    if (br.Exception != null)
+                    {
+                        throw br.Exception;
+                    }
+                    if (br.Result == null)
+                    {
+                        throw new Exception("Load bundle failed, result is null: " + bundleName);
+                    }
+
+                    FixShaders(br);
+
+                    if (assetName != null)
+                    {
+                        IProgressResult<float, UnityEngine.Object> assetResult = br.Result.LoadAssetAsync<UnityEngine.Object>(assetName);
+                        assetResult.Callbackable().OnCallback((ar) => {
+                            try
+                            {
+                                if (ar.Exception != null)
+                                {
+                                    throw ar.Exception;
+                                }
+                                if (onLoaded != null)
+                                {
+                                    onLoaded(ar.Result);
+                                }
+                            }
+                            catch (System.Exception e)
+                            {
+                                Debug.LogErrorFormat("LoadBundleAssetsAsync bundleName: {0}, asset:{1}, load asset failure. Error:{2}", bundleName, assetName, e);
+                            }
+                            finally
+                            {
+                                if (onFinish != null)
+                                {
+                                    onFinish();
+                                }
+                            }
+                        });
+                    }
+                    else
+                    {
+                        IProgressResult<float, UnityEngine.Object[]> assetResult = br.Result.LoadAllAssetsAsync<UnityEngine.Object>();
+                        assetResult.Callbackable().OnCallback((ar) => {
+                            try
+                            {
+                                if (ar.Exception != null)
+                                {
+                                    throw ar.Exception;
+                                }
+                                foreach (UnityEngine.Object prefab in ar.Result)
+                                {
+                                    if (onLoaded != null)
+                                    {
+                                        onLoaded(prefab);
+                                    }
+                                }
+                            }
+                            catch (System.Exception e)
+                            {
+                                Debug.LogErrorFormat("LoadBundleAssetsAsync bundleName: {0}, load all assets failure. Error:{1}", bundleName, e);
+                            }
+                            finally
+                            {
+                                if (onFinish != null)
+                                {
+                                    onFinish();
+                                }
+                            }
+                        });
+                    }
                 }
-                else {
-                    IProgressResult<float, UnityEngine.Object[]> assetResult = br.Result.LoadAllAssetsAsync<UnityEngine.Object>();
-                    assetResult.Callbackable().OnCallback((ar) => {
-                        foreach (UnityEngine.Object prefab in ar.Result)
-                        {
-                            onLoaded(prefab);
-                        }
+                catch (System.Exception e)
+                {
+                    Debug.LogErrorFormat("LoadBundleAssetsAsync bundleName: {0}, asset:{1}, load bundle failure. Error:{2}", bundleName, assetName, e);
+                    // 失败也要推进加载队列，避免 Whilst 管道因 onFinish 未触发而停滞。
+                    if (onFinish != null)
+                    {
                         onFinish();
-                    });
+                    }
                 }
             });
         }
