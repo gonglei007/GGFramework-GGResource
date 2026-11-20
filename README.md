@@ -148,3 +148,9 @@ flowchart LR
 ## 更多资料
 
 * [游戏开发图谱](https://github.com/gonglei007/GameDevMind)
+
+## 自动化 Unity 回归与 CI
+
+本仓契约：[ci/unity-regression.json](ci/unity-regression.json)。EditMode 至少 15 项、PlayMode 至少 2 项。新 PlayMode 检查最后引用释放后的原生对象销毁，以及显式独占组清理后的缓存/原生对象释放；不初始化 Loxodon 或宣称全量内存无泄漏。
+
+共享执行器按 [Demo `6fba3a3`](https://github.com/gonglei007/GGFramework-Demo/tree/6fba3a32aae1951df8dd034dd15f36a36ab25895/tools/ci) 固定复用，保持本模块运行时依赖不变。[本地命令、一次性 Windows runner、触发规则、artifact 与边界](https://github.com/gonglei007/GGFramework-Demo/blob/6fba3a32aae1951df8dd034dd15f36a36ab25895/tools/ci/README.md)统一维护。分支 push 会排队真实 Unity job，PR 托管契约检查不能代替 Unity；没有 runner 时不会计为 Unity 通过。每轮结束后注销 runner，不安装服务、不上传 Unity 授权。
