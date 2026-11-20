@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "unityVersion": "6000.3.13f1",
+  "repository": "gonglei007/GGFramework-GGResource",
+  "projectPath": "GGResource",
+  "stages": [
+    {
+      "name": "resource-editmode",
+      "kind": "nunit",
+      "platform": "EditMode",
+      "minimum": 15,
+      "graphics": false
+    },
+    {
+      "name": "resource-playmode",
+      "kind": "nunit",
+      "platform": "PlayMode",
+      "minimum": 2,
+      "graphics": true
+    }
+  ]
+}
